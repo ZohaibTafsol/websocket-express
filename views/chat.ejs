@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <style>
+        .sender {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            max-width: 60%;
+            align-self: flex-end;
+        }
+
+        .receiver {
+            background-color: #f1f1f1;
+            color: #333;
+            padding: 10px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            max-width: 60%;
+            align-self: flex-start;
+        }
+
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-container {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4>Chat </h4>
+                <div id="typing"></div>
+            </div>
+            <div class="card-body">
+                <div id="messages" class="mb-3">
+                    <div class="message-container">
+                        <% messages.forEach(function (message) { %>
+                            <div class="message <%= message.username === username ? 'sender' : 'receiver' %>">
+                                <strong style="text-transform: capitalize;">
+                                    <%= message.username %>:
+                                </strong>
+                                <%= message.message %>
+                            </div>
+                            <% }); %>
+
+                    </div>
+                </div>
+
+                <form id="chatForm" class="d-flex">
+                    <input type="text" id="message" placeholder="Enter your message" class="form-control me-2"
+                        autocomplete="off" required>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO and jQuery -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        const socket = io();
+        const username = `<%= username %>`;  // Your username
+
+        $(document).ready(function () {
+            $("#messages").scrollTop($("#messages")[0].scrollHeight);
+
+            // Send message on form submit
+            $("#chatForm").submit(function (e) {
+                e.preventDefault();
+                const message = $("#message").val();
+
+                // Emit message to server
+                if (message) {
+                    socket.emit("chat message", {
+                        username,
+                        message
+                    });
+
+                    socket.emit("typing", {
+                        username,
+                        isTyping: false
+                    });
+
+                    // Clear message input field
+                    $("#message").val("");
+                }
+            });
+
+
+            // Listen for incoming messages from the server
+            socket.on("chat message", function (msg) {
+                // Check if the message is from the user or others
+                const messageClass = msg.username === username ? "sender" : "receiver";
+                const messageItem = `<div class="${messageClass}"><strong>${msg.username}:</strong> ${msg.message}</div>`;
+                $("#messages").append(messageItem);
+                // Scroll to the bottom of the messages
+                $("#messages").scrollTop($("#messages")[0].scrollHeight);
+            });
+
+            socket.on("connect", function (data) {
+                console.log("Connected to server", data);
+            });
+
+            socket.on("typing", function (typingData) {
+                if (typingData.isTyping && typingData.username !== username) {
+                    $("#typing").text(typingData.username + " is typing...");
+                } else {
+                    $("#typing").text("");
+                }
+            });
+
+            $("#message").on("input", function () {
+                const message = $(this).val();
+                let isTyping = message.length > 0;
+                socket.emit("typing", {
+                    username,
+                    isTyping: isTyping
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
