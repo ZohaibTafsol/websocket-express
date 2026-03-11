@@ -36,7 +36,23 @@ io.on('connection', (socket) => {
     socket.on('ice-candidate', (data) => {
         socket.broadcast.emit('ice-candidate', data); // send ICE candidate to the other user
     });
+    //   when user send a message
+    socket.on("chat message", (data) => {
+        // insert message, username and created_at is now to database
+        db.query("INSERT INTO messages (message, username, created_at) VALUES (?, ?, ?)", [data.message, data.username, new Date()], (err, result) => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            io.emit("chat message", data);
+        });
+    });
 
+    //   when user is typing
+    socket.on("typing", (typingData) => {
+        io.emit("typing", typingData);
+    });
+    
     socket.on('disconnect', () => {
         console.log('A user disconnected');
     });

@@ -21,10 +21,10 @@ app.get("/:username", (req, res) => {
 
 const server = createServer(app);
 const db = mysql.createConnection({
-    host: "localhost",
+    host: "mysql.railway.internal",
     user: "root",
-    password: "",
-    database: "websocket2"
+    password: "pYuSCrAAvMTzaPwPBRICSRfzrcvOehVf",
+    database: "railway"
 });
 
 const io = new Server(server);
