@@ -16,6 +16,16 @@ app.get('/', (req, res) => {
     res.render('video');
 });
 
+app.get("/:username", (req, res) => {
+    db.query("SELECT * from messages", (err, results) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        res.render("chat", { username: req.params.username, messages: results });
+    });
+});
+
 // WebSocket signaling
 io.on('connection', (socket) => {
     console.log('A user connected');
@@ -52,7 +62,7 @@ io.on('connection', (socket) => {
     socket.on("typing", (typingData) => {
         io.emit("typing", typingData);
     });
-    
+
     socket.on('disconnect', () => {
         console.log('A user disconnected');
     });
